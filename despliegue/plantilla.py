@@ -50,11 +50,13 @@ def app():
             st.write('Dataframe con valores añadidos:')
             st.dataframe(df_main)
             if selected_model == 'ltsm':
-                st.write('Modelo LTSM')
-                st.pyplot(mostrar_correlacion(df_main))
-                df_fsm = ltsm_final(df_main, begin_date, end_date)
-                st.dataframe(df_fsm)
-                # Colocar modelo ltsm
+                if selected_file_path == 'FSM':
+                    st.write('Modelo LTSM')
+                    df_main['Next_Close_FSM'] = df_main['Close_FSM'].shift(-1)
+                    st.pyplot(mostrar_correlacion(df_main))
+                    df_fsm = ltsm_final(df_main, begin_date, end_date)
+                    st.dataframe(df_fsm)
+                    # Colocar modelo ltsm
             elif selected_model == 'svm':
                 st.write('Modelo SVM')
                 # Colocar modelo svm
