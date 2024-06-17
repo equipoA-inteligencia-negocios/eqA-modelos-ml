@@ -50,19 +50,35 @@ def app():
             st.write('Dataframe con valores añadidos:')
             st.dataframe(df_main)
             if selected_model == 'ltsm':
-                if selected_file_path == 'FSM':
-                    st.write('Modelo LTSM')
+                if selected_file_path == 'BVN':
+                    st.write('Modelo LTSM - DATA BVN')
+                elif selected_file_path == 'FSM':
+                    st.write('Modelo LTSM - DATA FSM')
                     df_main['Next_Close_FSM'] = df_main['Close_FSM'].shift(-1)
                     st.pyplot(mostrar_correlacion(df_main))
                     df_fsm = ltsm_final(df_main, begin_date, end_date)
                     st.dataframe(df_fsm)
                     # Colocar modelo ltsm
+                elif selected_file_path == 'SCCO':
+                    st.write('Modelo LTSM - DATA SCCO')
             elif selected_model == 'svm':
-                st.write('Modelo SVM')
-                # Colocar modelo svm
+                if selected_file_path == 'BVN':
+                    st.write('Modelo SVM - DATA BVN')
+                elif selected_file_path == 'FSM':
+                    st.write('Modelo SVM - DATA FSM')
+                elif selected_file_path == 'SCCO':
+                    st.write('Modelo SVM - DATA SCCO')
             elif selected_model == 'mh':
-                st.write('Modelo Híbrido')
-                # Colocar modelo híbrido
+                if selected_file_path == 'BVN':
+                    st.write('Modelo Híbrido - DATA BVN')
+                elif selected_file_path == 'FSM':
+                    st.write('Modelo Híbrido - DATA FSM')
+                elif selected_file_path == 'SCCO':
+                    st.write('Modelo Híbrido - DATA SCCO')
             elif selected_model == 'rf':
-                st.write('Modelo Random Forest')
-                # Colocar modelo random forest
+                if selected_file_path == 'BVN':
+                    st.write('Modelo Random Forest - DATA BVN')
+                elif selected_file_path == 'FSM':
+                    st.write('Modelo Random Forest - DATA FSM')
+                elif selected_file_path == 'SCCO':
+                    st.write('Modelo Random Forest - DATA SCCO')
