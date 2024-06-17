@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 import yfinance as yf
 from sklearn.metrics import mean_absolute_percentage_error, mean_squared_error, r2_score
-from add_data import calculate_indicators_mining_company
+from despliegue.adding_data import calculate_indicators_mining_company, mostrar_correlacion
+from despliegue.ltsm import ltsm_final
 
 def cargar_modelo(path):
     return joblib.load(path)
@@ -50,6 +51,9 @@ def app():
             st.dataframe(df_main)
             if selected_model == 'ltsm':
                 st.write('Modelo LTSM')
+                st.pyplot(mostrar_correlacion(df_main))
+                df_fsm = ltsm_final(df_main, begin_date, end_date)
+                st.dataframe(df_fsm)
                 # Colocar modelo ltsm
             elif selected_model == 'svm':
                 st.write('Modelo SVM')

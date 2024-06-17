@@ -6,3 +6,4 @@ tensorflow
 yfinance
 ta
 joblib
+seaborn

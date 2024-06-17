@@ -1,5 +1,9 @@
 import yfinance as yf
 import ta
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+import pandas as pd
 
 def importar_igbvl(fecha_inicio, fecha_fin):
     IGBVL_data = yf.download('^SPBLPGPT', start = fecha_inicio, end = fecha_fin)
@@ -107,3 +111,29 @@ def calculate_indicators_mining_company(df, mining_company):
     # Diferencia (DIF)
     df[f'DIF_{mining_company}'] = df[f'Close_{mining_company}'].diff()
     return df
+
+def mostrar_correlacion(df):
+    correlation_matrix = df.corr(method='pearson')
+    plt.figure(figsize=(30, 27))
+    sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt='.4f', vmin=-1, vmax=1)
+    plt.title('Matriz de Correlación de Pearson')
+    plt.show()
+
+def combinar_df(df, fecha_inicio, fecha_fin):
+    IGBVL_data = importar_igbvl(fecha_inicio, fecha_fin)
+    DJI_data = importar_dji(fecha_inicio, fecha_fin)
+    NASDAQ_data = importar_nasdaq(fecha_inicio, fecha_fin)
+    PEN_X_data = importar_dolar(fecha_inicio, fecha_fin)
+    GLD_data = importar_oro(fecha_inicio, fecha_fin)
+    SIF_data = importar_plata(fecha_inicio, fecha_fin)
+    HGF_data = importar_cobre(fecha_inicio, fecha_fin)
+    T09_ZINC = importar_zinc(fecha_inicio, fecha_fin)
+    new_df = pd.merge(df, IGBVL_data, on='Date')
+    new_df = pd.merge(new_df, DJI_data, on='Date')
+    new_df = pd.merge(new_df, NASDAQ_data, on='Date')
+    new_df = pd.merge(new_df, PEN_X_data, on='Date')
+    new_df = pd.merge(new_df, GLD_data, on='Date')
+    new_df = pd.merge(new_df, SIF_data, on='Date')
+    new_df = pd.merge(new_df, HGF_data, on='Date')
+    new_df = pd.merge(new_df, T09_ZINC, on='Date')
+    return new_df
