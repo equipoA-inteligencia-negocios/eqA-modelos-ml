@@ -1,6 +1,7 @@
 import streamlit as st
 from multiapp import MultiApp
-from despliegue import home, modelo_hibrido, plantilla
+from despliegue import home, modelo_hibrido
+from despliegue import plantilla
 
 app = MultiApp()
 st.markdown("# Equipo A - Inteligencia de Negocios ")
