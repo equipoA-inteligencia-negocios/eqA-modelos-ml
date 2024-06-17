@@ -9,7 +9,7 @@ st.markdown("# Equipo A - Inteligencia de Negocios ")
 app.add_app("Home", home.app)
 app.add_app("Modelo Híbrido", modelo_hibrido.app)
 app.add_app("Modelo Random Forest", modelo_rf.app)
-app.add_app("Modelo SVM", modelo_svm.app)
+app.add_app("Modelo SVR", modelo_svm.app)
 
 # The main app
 app.run()
