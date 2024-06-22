@@ -20,7 +20,7 @@ def app():
     st.subheader("Obtener datos de Yahoo Finance")
     start = st.date_input('Inicio', value=pd.to_datetime('2014-01-01'))
     end = st.date_input('Fin', value=pd.to_datetime('2014-01-28'))
-    stock_option = st.selectbox('Seleccione la cotización bursátil', ['BVN', 'FSM'])
+    stock_option = st.selectbox('Seleccione la cotización bursátil', ['BVN', 'FSM', 'SCCO'])
 
     df = pdr.get_data_yahoo(stock_option, start, end)
     st.write(df)
