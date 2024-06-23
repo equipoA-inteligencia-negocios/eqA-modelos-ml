@@ -5,6 +5,8 @@ from ta.momentum import RSIIndicator # RSI
 from ta.trend import MACD # MACD
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
+
     
 def preprocesar(df):
     df = df.dropna()
@@ -59,7 +61,6 @@ def preprocesar(df):
 
     # Eliminamos los valores nulos
     df.dropna(inplace=True)
-    df.isnull().sum()
     
     st.write('## Datos con la variable objetivo Next_IGBVL')
     st.dataframe(df)
@@ -80,7 +81,6 @@ def preprocesar(df):
 
     """# E) NORMALIZACIÓN"""
 
-    from sklearn.preprocessing import MinMaxScaler
 
     scaler_X = MinMaxScaler(feature_range=(0, 1))
     scaler_y = MinMaxScaler(feature_range=(0, 1))
@@ -97,4 +97,4 @@ def preprocesar(df):
     st.write('## Dataframe normalizado')
     st.dataframe(df_final)
     
-    return df_final
+    return df_final, scaler_y
