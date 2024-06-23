@@ -53,11 +53,11 @@ def app():
     train(model_lstm, X_train_lstm, y_train_lstm, epochs, batch_size, validation_split)
     st.write("Modelo entrenado!")
     
-    st.subheader("Evaluación del modelo")
-    evaluate(model_lstm, X_test_lstm, y_test_lstm)
-    
     st.subheader("Predicciones en el conjunto de prueba")
-    predict_test(model_lstm, X_test_lstm, y_test_lstm, y_test_indexes_lstm, scaler_y, model_type_prefix)
+    mape, r2 = predict_test(model_lstm, X_test_lstm, y_test_lstm, y_test_indexes_lstm, scaler_y, model_type_prefix)
+    
+    st.subheader("Evaluación del modelo")
+    evaluate(model_lstm, X_test_lstm, y_test_lstm, mape, r2)
     
     st.subheader("Predicciones en el conjunto de datos completo")
     df_predicciones = plot_real_prices_full(seq_length_lstm, df, model_lstm, scaler_y, model_type_prefix)

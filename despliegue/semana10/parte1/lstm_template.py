@@ -7,6 +7,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
 from tensorflow.keras.optimizers import Adam
 import matplotlib.pyplot as plt
+from sklearn.metrics import mean_absolute_percentage_error, mean_squared_error, r2_score
 
 def create_sequences(data, seq_length):
     sequences = []
@@ -77,14 +78,17 @@ def train(model_lstm, X_train_lstm, y_train_lstm, epochs, batch_size, validation
         verbose=2               # Modo de verbosidad; 2 para una salida detallada por época
     )
     
-def evaluate(model_lstm, X_test_lstm, y_test_lstm):
+def evaluate(model_lstm, X_test_lstm, y_test_lstm, mape, r2):
     # Evaluamos la pérdida del modelo (MSE) en el conjunto de prueba
     loss_lstm = model_lstm.evaluate(X_test_lstm, y_test_lstm, verbose=0)
-    st.write(f'Pérdida en el conjunto de prueba (MSE): {loss_lstm} ({loss_lstm:.8f})')
 
     # Calculamos el RMSE en el conjunto de prueba
     rmse_lstm = np.sqrt(loss_lstm)
+    
+    st.write(f'Pérdida en el conjunto de prueba (MSE): {loss_lstm} ({loss_lstm:.8f})')
     st.write(f'RMSE en el conjunto de prueba: {rmse_lstm}')
+    st.write(f"MAPE: {mape:.4f}")
+    st.write(f"Coeficiente de determinación (R^2): {r2:.4f}")
 
 def predict_test(model_lstm, X_test_lstm, y_test_lstm, y_test_indexes_lstm, scaler_y, version):
     # Hacemos predicciones con el modelo entrenado
@@ -92,12 +96,23 @@ def predict_test(model_lstm, X_test_lstm, y_test_lstm, y_test_indexes_lstm, scal
     # Desescalar los valores reales y las predicciones
     y_test_lstm_descaled = scaler_y.inverse_transform(y_test_lstm.reshape(-1, 1))
     y_pred_lstm_descaled = scaler_y.inverse_transform(y_pred_lstm.reshape(-1, 1))
+    
+    # MAPE (Mean Absolute Percentage Error)
+    mape = mean_absolute_percentage_error(y_test_lstm_descaled, y_pred_lstm_descaled)
+    
+    # R^2 (coeficiente de determinación)
+    r2 = r2_score(y_test_lstm_descaled, y_pred_lstm_descaled)
 
     results_lstm_descaled = pd.DataFrame({
         'Fecha': y_test_indexes_lstm,
         'Valor Real': y_test_lstm_descaled.flatten(),
         'Predicción Modelo LSTM': y_pred_lstm_descaled.flatten()
     })
+    
+    # st.write(f'Pérdida en el conjunto de prueba (MSE): {mse_lstm} ({mse_lstm:.8f})')
+    # st.write(f'RMSE en el conjunto de prueba: {rmse_lstm}')
+    # st.write(f"MAPE: {mape:.4f}")
+    # st.write(f"Precisión del modelo (R^2): {r2:.4f}")
 
     # Ordenar el DataFrame por Fecha
     results_lstm_descaled.sort_values(by='Fecha', inplace=True)
@@ -111,6 +126,8 @@ def predict_test(model_lstm, X_test_lstm, y_test_lstm, y_test_indexes_lstm, scal
     plt.title(f'Comparación del Valor Real vs Predicción del Modelo LSTM {version}')
     plt.legend()
     st.pyplot(plt)
+    
+    return mape, r2
     
 # Crear secuencias para todo el conjunto de datos
 def create_sequences_full(data, seq_length):

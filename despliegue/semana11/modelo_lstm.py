@@ -16,6 +16,14 @@ from sklearn.metrics import r2_score
 # Configuración de estilo de Seaborn para gráficos
 sns.set(style="whitegrid")
 
+def show_corr_matrix(df, ticker):
+    corr_matrix = df.corr()
+    plt.figure(figsize=(16,14))
+    sns.heatmap(corr_matrix[[f'Next_Close_{ticker}']], annot=True, cmap='coolwarm', fmt='.3f')
+    plt.title('Matriz de correlación')
+    st.write(f'#### Matriz de correlación de la variable objetivo Next_Close_{ticker} con las demás variables')
+    st.pyplot(plt)
+
 def calculate_indicators_mining_company(df, mining_company):
   # Hallamos precio de cierre del día previo
   df[f'Prev Close_{mining_company}'] = df[f'Close_{mining_company}'].shift(1)
@@ -222,9 +230,10 @@ def preprocesar_datos(data, ticker, fecha_inicio, fecha_fin):
     data = calculate_indicators_mining_company(data, ticker)
 
     data[f'Next_Close_{ticker}'] = data[f'Close_{ticker}'].shift(-1)
-    data['Tomorrow'] = data[f'Close_{ticker}'].shift(-1)
     
     data_v2 = data[[f'Open_{ticker}', f'High_{ticker}', f'Low_{ticker}', f'Close_{ticker}', f'Adj Close_{ticker}', f'Prev Close_{ticker}', f'Prev High_{ticker}', f'Prev Low_{ticker}', f'Prev Open_{ticker}', f'SMA_50_{ticker}', f'EMA_50_{ticker}', f'BB_Middle_{ticker}', f'BB_Upper_{ticker}', f'Avg Price_{ticker}', f'Next_Close_{ticker}']]
+    
+    st.dataframe(data_v2)
     
     IGBVL_data = IGBVL_data[['Close_IGBVL']]
     DJI_data = DJI_data[['Close_DJI']]
@@ -235,35 +244,67 @@ def preprocesar_datos(data, ticker, fecha_inicio, fecha_fin):
     HGF_data = HGF_data[['Close_HGF']]
     T09_ZINC = T09_ZINC[['Close_ZINC']]
     
-    # Ahora mezclamos con el dataframe original
-    data_v3 = pd.merge(data_v2, IGBVL_data, on='Date')
-    data_v3 = pd.merge(data_v3, DJI_data, on='Date')
-    data_v3 = pd.merge(data_v3, NASDAQ_data, on='Date')
-    data_v3 = pd.merge(data_v3, PEN_X_data, on='Date')
-    data_v3 = pd.merge(data_v3, GLD_data, on='Date')
-    data_v3 = pd.merge(data_v3, SIF_data, on='Date')
-    data_v3 = pd.merge(data_v3, HGF_data, on='Date')
-    data_v3 = pd.merge(data_v3, T09_ZINC, on='Date')
+    
+    if IGBVL_data.empty:
+        data_v3 = pd.merge(data_v2, DJI_data, on='Date')
+        data_v3 = pd.merge(data_v3, NASDAQ_data, on='Date')
+        data_v3 = pd.merge(data_v3, PEN_X_data, on='Date')
+        data_v3 = pd.merge(data_v3, GLD_data, on='Date')
+        data_v3 = pd.merge(data_v3, SIF_data, on='Date')
+        data_v3 = pd.merge(data_v3, HGF_data, on='Date')
+        data_v3 = pd.merge(data_v3, T09_ZINC, on='Date')
+    else:
+        data_v3 = pd.merge(data_v2, IGBVL_data, on='Date')
+        data_v3 = pd.merge(data_v3, DJI_data, on='Date')
+        data_v3 = pd.merge(data_v3, NASDAQ_data, on='Date')
+        data_v3 = pd.merge(data_v3, PEN_X_data, on='Date')
+        data_v3 = pd.merge(data_v3, GLD_data, on='Date')
+        data_v3 = pd.merge(data_v3, SIF_data, on='Date')
+        data_v3 = pd.merge(data_v3, HGF_data, on='Date')
+        data_v3 = pd.merge(data_v3, T09_ZINC, on='Date')
+    
+    # if (not data_v3.empty):
+    #     show_corr_matrix(data_v3, ticker)
+    # else:
+    #     show_corr_matrix(data_v2, ticker)
+    
+    show_corr_matrix(data_v3, ticker)
     
     if (ticker == 'FSM'):
         data_v4 = pd.merge(data_v2, SIF_data, on='Date')
     else:
         data_v4 = data_v2
+    
+    st.write("#### Dataframe con las variables adicionales")
+    st.dataframe(data_v4)
 
     # Escalar los datos
-    scaler = MinMaxScaler(feature_range=(0, 1))
+    # scaler = MinMaxScaler(feature_range=(0, 1))
 
-    columns = data_v4.columns
+    scaler_X = MinMaxScaler(feature_range=(0, 1))
+    scaler_y = MinMaxScaler(feature_range=(0, 1))
+    
+    columns_X = data_v4.columns.drop(f'Next_Close_{ticker}')
+    
+    # Normalizamos las variables independientes
+    data_v4.loc[:, columns_X] = scaler_X.fit_transform(data_v4[columns_X])
+    
+    # Normalizamos la variable dependiente
+    data_v4.loc[:, f'Next_Close_{ticker}'] = scaler_y.fit_transform(data_v4[f'Next_Close_{ticker}'].values.reshape(-1,1)).flatten()
+    
+    # columns = data_v4.columns
 
-    data_v4[columns] = scaler.fit_transform(data_v4[columns])
+    # data_v4[columns] = scaler.fit_transform(data_v4[columns])
 
     # Por último, el tratamiento de valores nulos empleado en la tesis es de eliminarlos
-    data_v4.isnull().sum()
+    # data_v4.isnull().sum()
 
     data_v4.dropna(inplace=True)
-    data_v4.isnull().sum()
     
-    return data_v4, scaler
+    st.write("#### Dataframe normalizado")
+    st.dataframe(data_v4)
+    
+    return data_v4, scaler_y
 
 # Función para entrenar el modelo
 def entrenar_modelo(data, ticker):
@@ -372,12 +413,12 @@ def entrenar_modelo(data, ticker):
 def evaluate_model(ticker, model, X_test, y_test, y_test_indices):
     # Evaluamos la pérdida del modelo (MSE) en el conjunto de prueba
     loss = model.evaluate(X_test, y_test, verbose=0)
-    print(f'Pérdida en el conjunto de prueba (MSE): {loss} ({loss:.8f})')
 
     # Calculamos el RMSE en el conjunto de prueba
     rmse = np.sqrt(loss)
-    print(f'RMSE en el conjunto de prueba: {rmse}')
 
+    # st.subheader("Predicciones en el conjunto de prueba")
+    
     # Hacemos predicciones con el modelo entrenado
     y_pred = model.predict(X_test)
 
@@ -395,22 +436,18 @@ def evaluate_model(ticker, model, X_test, y_test, y_test_indices):
     mape = mean_absolute_percentage_error(y_test_flatten, y_pred_flatten)
 
     # RMSE (Root Mean Square Error)
-    rmse = np.sqrt(mean_squared_error(y_test_flatten, y_pred_flatten))
+    # rmse = np.sqrt(mean_squared_error(y_test_flatten, y_pred_flatten))
 
     # R^2 (coeficiente de determinación)
     r2 = r2_score(y_test_flatten, y_pred_flatten)
-
-    # Mostrar las métricas
-    print(f'MAPE: {mape:.4f}')
-    print(f'RMSE: {rmse:.4f}')
-    print(f'R^2: {r2:.4f}')
+    
+    # st.subheader("Predicciones en el conjunto de prueba")
 
     # Mostrar las métricas con Streamlit
-    st.write(f"**Evaluación del Modelo para {ticker}**")
     st.write(f"Pérdida en el conjunto de prueba (MSE): {loss:.8f}")
     st.write(f"RMSE en el conjunto de prueba: {rmse:.4f}")
     st.write(f"MAPE: {mape:.4f}")
-    st.write(f"Precisión del modelo (R^2): {r2:.4f}")
+    st.write(f"Coeficiente de determinación (R^2): {r2:.4f}")
 
     results = pd.DataFrame({
         'Fecha': y_test_indices,
@@ -420,6 +457,8 @@ def evaluate_model(ticker, model, X_test, y_test, y_test_indices):
 
     # Ordenar el DataFrame por fecha
     results.sort_values(by='Fecha', inplace=True)
+    
+    st.subheader("Predicciones en el conjunto de prueba")
 
     # Visualización de resultados
     plt.figure(figsize=(14, 7))
@@ -430,60 +469,48 @@ def evaluate_model(ticker, model, X_test, y_test, y_test_indices):
     plt.title(f'Comparación del Valor Real vs Predicción del Modelo LSTM para {ticker}')
     plt.legend()
     st.pyplot(plt)
-
-
-# def app():
-#     st.title("Modelo de Predicción de Precios de Acciones")
     
-#     st.write("""
-#     ### Bienvenido a la aplicación de predicción de precios de acciones. 
-#     Esta aplicación utiliza un modelo de Random Forest para predecir los precios de cierre de acciones y determinar la tendencia del mercado.
-#     Por favor, introduzca los parámetros necesarios para comenzar.
-#     """)
+def create_sequences_full(data, seq_length):
+    sequences = []
+    for i in range(len(data) - seq_length):
+        sequences.append(data.iloc[i:i + seq_length].values)
+    return np.array(sequences)
 
-#     # Parámetros de entrada del usuario
-#     st.subheader("Configuración del Modelo")
-#     ticker = st.selectbox("Seleccione la cotización bursátil", ["BVN", "FSM", "SCCO"])
-#     fecha_inicio = st.date_input("Fecha de Inicio", pd.to_datetime("2022-01-01"))
-#     fecha_fin = st.date_input("Fecha de Fin", pd.to_datetime("2023-01-01"))
+def plot_real_prices_full(seq_length, data, model, scaler_y, ticker):
+    # Configuración del modelo LSTM
+    X_full = create_sequences_full(data, seq_length)
 
-#     if st.button("Cargar Datos"):
-#         # Descargar y preprocesar datos
-#         data_load_state = st.text("Cargando datos...")
-#         datos = descargar_datos(ticker, fecha_inicio, fecha_fin)
-#         data_load_state.text("Datos cargados con éxito!")
+    # Realizar predicciones en todo el conjunto de datos
+    y_pred_full = model.predict(X_full)
+    
+    
 
-#         # Mostrar datos
-#         st.subheader(f"Datos de {ticker} desde {fecha_inicio} hasta {fecha_fin}")
-#         st.dataframe(datos)
+    # Desescalar las predicciones y los valores reales
+    # full_indices = data.index[seq_length:]
+    y_pred_full_descaled = scaler_y.inverse_transform(y_pred_full)
+    y_real_full_descaled = scaler_y.inverse_transform(data.iloc[seq_length:][f'Next_Close_{ticker}'].values.reshape(-1, 1))
 
-#         # Preprocesamiento de datos
-#         st.subheader("Preprocesamiento de Datos")
-#         st.write("""
-#         Se crea una columna 'Tomorrow' que contiene el precio de cierre del día siguiente y una columna 'Target' que indica si el precio subió o bajó.
-#         Estos datos son necesarios para entrenar y evaluar el modelo de predicción.
-#         """)
-        
-#         datos = preprocesar_datos(datos, ticker, fecha_inicio, fecha_fin)
+    # Crear el DataFrame con los valores desescalados
+    results_full = pd.DataFrame({
+        'Fecha': data.index[seq_length:seq_length + len(y_pred_full_descaled)],
+        'Valor Real': y_real_full_descaled.flatten(),
+        'Predicción Modelo LSTM': y_pred_full_descaled.flatten()
+    })
 
-#         # Entrenar modelo
-#         st.subheader("Entrenamiento del Modelo")
-#         st.write("""
-#         El modelo se entrena utilizando un Random Forest Classifier. 
-#         Este modelo de aprendizaje automático es eficaz para la predicción de series temporales debido a su capacidad para manejar grandes cantidades de datos y múltiples características.
-#         """)
-#         model, X_test, y_test, y_test_indices = entrenar_modelo(datos, ticker)
-        
-#         print('model: ', model)
+    # Ordenar el DataFrame por fecha
+    results_full.sort_values(by='Fecha', inplace=True)
 
-#         # Realizar predicciones
-#         st.subheader("Predicciones del Modelo")
-#         st.write("""
-#         Después de entrenar el modelo, se utilizan los datos de prueba para realizar predicciones sobre la tendencia de los precios de cierre para los días siguientes.
-#         """)
-#         evaluate_model(ticker, model, X_test, y_test, y_test_indices)
+    # Visualización de resultados
+    plt.figure(figsize=(14, 7))
+    plt.plot(results_full['Fecha'], results_full['Valor Real'], label='Valor Real')
+    plt.plot(results_full['Fecha'], results_full['Predicción Modelo LSTM'], label='Predicción Modelo LSTM')
+    plt.xlabel('Fecha')
+    plt.ylabel('Precio de Cierre')
+    plt.title(f'Comparación del Valor Real vs Predicción del Modelo LSTM para {ticker}')
+    plt.legend()
+    st.pyplot(plt)
 
-
+    return results_full
 
 def app():
     st.title("Modelo de Predicción de Precios de Acciones")
@@ -512,16 +539,15 @@ def app():
 
         # Preprocesamiento de datos
         st.subheader("Preprocesamiento de Datos")
-        st.write("""
-        Se crea una columna 'Tomorrow' que contiene el precio de cierre del día siguiente y una columna 'Target' que indica si el precio subió o bajó.
-        Estos datos son necesarios para entrenar y evaluar el modelo de predicción.
+        st.write(f"""
+        Se crea una columna 'Next_Close_{ticker}' que contiene el precio de cierre del día siguiente.
         """)
         
         # datos = preprocesar_datos(datos, ticker, fecha_inicio, fecha_fin)
         datos, scaler = preprocesar_datos(datos, ticker, fecha_inicio, fecha_fin)
 
         # Ploteo de la media móvil
-        st.subheader("Media Móvil de los Precios Reales")
+        st.write("#### Media Móvil de los Precios Reales")
         plot_moving_average(datos, ticker)
 
         # Entrenar modelo
@@ -530,14 +556,22 @@ def app():
         El modelo se entrena utilizando un LSTM. 
         Este modelo de aprendizaje automático es eficaz para la predicción de series temporales debido a su capacidad para manejar secuencias de datos.
         """)
+        st.write("Entrenando el modelo...")
         model, X_test, y_test, y_test_indices = entrenar_modelo(datos, ticker)
+        st.write("Modelo entrenado!")
         
         # Realizar predicciones
-        st.subheader("Predicciones del Modelo")
+        st.subheader("Evaluación del Modelo")
         st.write("""
         Después de entrenar el modelo, se utilizan los datos de prueba para realizar predicciones sobre la tendencia de los precios de cierre para los días siguientes.
         """)
+        st.subheader(f"Evaluación del modelo para {ticker}")
         evaluate_model(ticker, model, X_test, y_test, y_test_indices)
+        
+        df_predicciones = plot_real_prices_full(60, datos, model, scaler, ticker)
+        
+        st.subheader("Dataframe de predicciones en el conjunto de datos completo")
+        st.dataframe(df_predicciones)
 
         # Predicción del precio del día siguiente
         next_day_price = predict_next_day_price(model, datos, 60, scaler, ticker)
