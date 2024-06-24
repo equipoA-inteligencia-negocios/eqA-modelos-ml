@@ -6,6 +6,7 @@ from despliegue.semana10.parte1 import lstm
 from despliegue.semana10.parte1 import rnn
 from despliegue.semana10.parte1 import mlp
 from despliegue.semana10.parte2 import rnn_simple
+from despliegue.semana10.parte2 import mlp2
 
 app = MultiApp()
 st.markdown("# Equipo A - Inteligencia de Negocios ")
@@ -20,7 +21,8 @@ app.add_app("Semana 11 - Modelo Híbrido", modelo_hibrido.app)
 app.add_app("Semana 10 - Modelo LSTM", lstm.app)
 app.add_app("Semana 10 - Modelo RNN", rnn.app)
 app.add_app("Semana 10 - Modelo MLP", mlp.app)
-app.add_app("Semana 10 - Modelo Simple RNN", rnn_simple.app)
+app.add_app("Semana 10 - Parte 2 - Modelo Simple RNN ", rnn_simple.app)
+app.add_app("Semana 10 - Parte 2 - Modelo MLP", mlp2.app)
 
 
 # The main app
